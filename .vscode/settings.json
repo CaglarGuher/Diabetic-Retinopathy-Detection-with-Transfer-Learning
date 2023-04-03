@@ -1,0 +1,25 @@
+{
+
+    // self and cls color for python
+    "editor.semanticTokenColorCustomizations": {     ////  MAIN COLORS  /////
+        "[Default Dark+]": {
+            "rules": {
+                "selfParameter": "#e38c2c",    
+                "clsParameter": "#e48928",
+                "function": "#af454e",
+                "class": "#fdcf00",
+                "parameter": "#1acaca",
+                
+                
+            },
+        },
+    },
+    
+    "editor.tokenColorCustomizations": {            /////  COMMENTS COLOR  /////
+        "comments": "#a1cf35",
+        
+        
+        
+    },
+    
+    }

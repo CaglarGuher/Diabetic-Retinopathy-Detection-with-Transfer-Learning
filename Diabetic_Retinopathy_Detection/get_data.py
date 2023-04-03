@@ -12,7 +12,7 @@ from filters import preprocess_image
 
 
 
-def get_data(data_label,train_test_path,val_path,train_test_sample_size,batch_size,image_filter):
+def get_data(data_label,train_test_path,val_path,train_test_sample_size,batch_size,image_filter,model):
 
     class dataset(Dataset): # Inherits from the Dataset class.
 
@@ -22,17 +22,43 @@ def get_data(data_label,train_test_path,val_path,train_test_sample_size,batch_si
             self.data_path = data_path
             self.image_transform = image_transform
             self.image_filter = image_filter
+            self.model = model
+
+            
         def __len__(self):
             return len(self.df) #Returns the number of samples in the dataset.
         
         def __getitem__(self,index):
             image_id = self.df['image'][index]
             image = cv2.imread(f'{self.data_path}/{image_id}.jpg') #Image.
+
+            resize_224 = transforms.Resize([224,224])
+            resize_229 = transforms.Resize([229,229])
+            resize_600 = transforms.Resize([600,600])
+            resize_528 = transforms.Resize([528,528])
+            resize_456 = transforms.Resize([456,456])
             
             if self.image_filter:
                 image = self.image_filter(image)
 
             if self.image_transform :
+
+                if self.model in ["resnet152", "resnet101", "vgg19", "densenet161", "alexnet", "googlenet", 
+                                  "mobilenet_v2", "shufflenet_v2_x1_0", "resnext50_32x4d", "wide_resnet50_2"]:
+                    image = resize_224(image)
+
+                elif self.model == "inception_v3":
+                    image = resize_229(image)
+
+                elif self.model == "efficient-netb7":
+                    image = resize_600(image)
+                
+                elif self.model == "efficient-netb6":
+                    image = resize_528(image)
+
+                elif self.model == "efficient,netb5":
+                    image = resize_456(image)
+
                 image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
                 image = self.image_transform(image) #Applies transformation to the image.
                 
@@ -63,9 +89,7 @@ def get_data(data_label,train_test_path,val_path,train_test_sample_size,batch_si
     # Concatenate the balanced datasets into a single dataframe
     balanced_train_test = pd.concat(balanced_dfs).reset_index()
 
-
-
-
+   
 
     train_test_transform = transforms.Compose([
         transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
@@ -74,12 +98,10 @@ def get_data(data_label,train_test_path,val_path,train_test_sample_size,batch_si
         transforms.RandomAffine(degrees=(-10, 10), translate=(0.1, 0.1), scale=(0.8, 1.2), shear=(-10, 10)),
         transforms.RandomVerticalFlip(),
         transforms.RandomRotation(degrees=[-10, 10]),
-        transforms.Resize([224,224]),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     valid_transform = transforms.Compose([
-        transforms.Resize([224,224]),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
