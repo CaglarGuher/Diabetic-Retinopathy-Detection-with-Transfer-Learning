@@ -3,7 +3,7 @@ import pandas as pd
 import cv2 
 import numpy as np
 desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
-print(desktop_path)
+
 dataset_total = pd.read_csv("C:/Users/PC/Desktop/retinopathy_data/data/labels/label.csv")
 train_test_image_directory = "C:/Users/PC/Desktop/retinopathy_data/data/test_train_images"
 validation_directiory = "C:/Users/PC/Desktop/retinopathy_data/data/validation_images"

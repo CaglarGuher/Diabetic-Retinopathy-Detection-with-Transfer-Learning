@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import Dataset,DataLoader 
 from sklearn.model_selection import train_test_split
 from torchvision import transforms
-from filters import preprocess_image
+
 
 
 
@@ -32,19 +32,22 @@ def get_data(data_label,train_test_path,val_path,train_test_sample_size,batch_si
             image_id = self.df['image'][index]
             image = cv2.imread(f'{self.data_path}/{image_id}.jpg') #Image.
 
-            resize_224 = transforms.Resize([224,224])
-            resize_229 = transforms.Resize([229,229])
-            resize_600 = transforms.Resize([600,600])
-            resize_528 = transforms.Resize([528,528])
-            resize_456 = transforms.Resize([456,456])
+            resize_224 = transforms.Compose([transforms.Resize([224,224])])
+            resize_229 = transforms.Compose([transforms.Resize([229,229])])
+            resize_600 = transforms.Compose([transforms.Resize([600,600])])
+            resize_528 = transforms.Compose([transforms.Resize([528,528])])
+            resize_456 = transforms.Compose([transforms.Resize([456,456])])
             
             if self.image_filter:
                 image = self.image_filter(image)
 
+            image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
             if self.image_transform :
+
 
                 if self.model in ["resnet152", "resnet101", "vgg19", "densenet161", "alexnet", "googlenet", 
                                   "mobilenet_v2", "shufflenet_v2_x1_0", "resnext50_32x4d", "wide_resnet50_2"]:
+                    
                     image = resize_224(image)
 
                 elif self.model == "inception_v3":
@@ -59,7 +62,7 @@ def get_data(data_label,train_test_path,val_path,train_test_sample_size,batch_si
                 elif self.model == "efficient,netb5":
                     image = resize_456(image)
 
-                image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+
                 image = self.image_transform(image) #Applies transformation to the image.
                 
             
@@ -120,7 +123,7 @@ def get_data(data_label,train_test_path,val_path,train_test_sample_size,batch_si
 
     
 
-    valid_data = dataset(df_validation,f'{val_path}',image_transform = valid_transform)
+    valid_data = dataset(df_validation,f'{val_path}',image_transform = valid_transform,image_filter=image_filter)
 
 
     train_dataloader = DataLoader(train_set,batch_size=batch_size,shuffle=True) #DataLoader for train_set.

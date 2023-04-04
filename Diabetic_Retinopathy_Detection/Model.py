@@ -1,5 +1,6 @@
+
 import torchvision.models as models
-import torch
+from torch import nn
 
 def select_model(model_name):
     
@@ -27,9 +28,32 @@ def select_model(model_name):
         model = model_func(pretrained=True)
         for parameter in model.parameters():
             parameter.requires_grad = False
-        model.fc = torch.nn.Linear(model.fc.in_features, 5)
-        return model
-    
-    # Return None if the specified model is not found
-    else:
-        return None
+        if any(name in model_name for name in ['resnet', 'inception','googlenet','mobilenet','shufflenet','resnext','wide_resnet',"densenet"]):
+            model.fc = nn.Sequential(
+                        nn.Linear(model.fc.in_features, 256),  
+                        nn.ReLU(), 
+                        nn.Dropout(0.4),
+                        nn.Linear(256, 5),
+                        nn.Softmax(dim=1)
+                        )             
+        elif any(name in model_name for name in ["vgg"]):
+            num_ftrs = model.classifier.in_features
+            model.classifier = nn.Sequential(
+                        nn.Linear(num_ftrs, 256),  
+                        nn.ReLU(), 
+                        nn.Dropout(0.4),
+                        nn.Linear(256, 5),
+                        nn.Softmax(dim=1))
+
+        elif "efficient" in model_name:
+            model.classifier[1] =nn.Sequential(
+                        nn.Linear(model.classifier[1].in_feature, 256),  
+                        nn.ReLU(), 
+                        nn.Dropout(0.4),
+                        nn.Linear(256, 5),
+                        nn.Softmax(dim=1)
+                        ) 
+        elif "alex" in model_name:
+            model.classifier[6] = nn.Linear(model.classifier[6].in_features, 5)
+
+    return model

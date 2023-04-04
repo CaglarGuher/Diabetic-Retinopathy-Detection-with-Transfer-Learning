@@ -1,30 +1,33 @@
 import torch
 import torch
-from torch import nn
 import pandas as pd 
-from ray import tune
-import os
-from Models import get_model
+from Model import select_model
 from get_data import get_data
 from filters import preprocess_image
-from paramtune import run_search
 from torch.utils.tensorboard import SummaryWriter
+import numpy as np
+from sklearn.metrics import confusion_matrix
+
+
+
+
+data_label = pd.read_csv("C:/Users/PC/Desktop/retinopathy_data/data/labels/label.csv")
+path = "C:/Users/PC/Desktop/retinopathy_data/data/test_train_images"
+path_for_validation = "C:/Users/PC/Desktop/retinopathy_data/data/validation_images"
 
 writer = SummaryWriter()
-path = "data/Images"
-data_label = pd.read_csv("dataset label.csv")
-path_for_validation = "data/validation_images"
 
 torch.cuda.empty_cache()
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-model = get_model("convnext_tiny")
+model = select_model("vgg19")
 
-train_data,test_data,valid_data = get_data(data_label,path,path_for_validation,train_test_sample_size = 50,batch_size=16,image_filter=preprocess_image)
+train_data,test_data,valid_data = get_data(data_label,path,path_for_validation,train_test_sample_size = 100,batch_size=16,image_filter=preprocess_image , model = "vgg19")
+ 
 
 
-
-def train(dataloader, loss_fn, optimizer, device):
+def train(dataloader,model, loss_fn, optimizer, device):
     
     model.train()
     running_loss = 0
@@ -54,7 +57,7 @@ def train(dataloader, loss_fn, optimizer, device):
     return avg_loss, accuracy
 
 
-def validate(dataloader,  loss_fn, device):
+def validate(dataloader,model,loss_fn, device):
 
     model.eval() 
     running_loss = 0
@@ -87,7 +90,7 @@ def optimize(config, train_loader, valid_loader,model):
 
     
     optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"], betas=(config["beta1"], config["beta2"]))
-    loss_fn = torch.nn.CrossEntropyLoss() # instantiate your loss function
+    loss_fn = torch.nn.CrossEntropyLoss() 
 
 
     for epoch in range(config["epoch"]):
@@ -118,3 +121,32 @@ config = {
 
 
 train_test_loop(config=config,device=device)
+
+
+
+# Set model to evaluation mode
+model.eval()
+
+# Create empty lists to store predictions and labels
+all_preds = []
+all_labels = []
+
+# Iterate over the validation set and make predictions
+with torch.no_grad():
+    for images, labels in valid_data:
+        images = images.to(device)
+        labels = labels.to(device)
+        preds = model(images)
+        all_preds.extend(preds.argmax(dim=1).cpu().numpy())
+        all_labels.extend(labels.cpu().numpy())
+
+# Create the confusion matrix
+cm = confusion_matrix(all_labels, all_preds)
+
+# Print the confusion matrix
+
+print(cm)
+
+accuracy = np.sum(np.diag(cm)) / np.sum(cm)
+
+print(f"accuracy of the model is  = {accuracy}")
