@@ -59,7 +59,7 @@ def get_data(data_label,train_test_path,val_path,train_test_sample_size,batch_si
                 elif self.model == "efficient-netb6":
                     image = resize_528(image)
 
-                elif self.model == "efficient,netb5":
+                elif self.model == "efficient-netb5":
                     image = resize_456(image)
 
 
