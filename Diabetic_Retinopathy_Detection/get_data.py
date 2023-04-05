@@ -34,6 +34,7 @@ def get_data(data_label,train_test_path,val_path,train_test_sample_size,batch_si
 
             resize_224 = transforms.Compose([transforms.Resize([224,224])])
             resize_229 = transforms.Compose([transforms.Resize([229,229])])
+            resize_256 = transforms.Compose([transforms.Resize([256,256])])
             resize_600 = transforms.Compose([transforms.Resize([600,600])])
             resize_528 = transforms.Compose([transforms.Resize([528,528])])
             resize_456 = transforms.Compose([transforms.Resize([456,456])])
@@ -45,8 +46,8 @@ def get_data(data_label,train_test_path,val_path,train_test_sample_size,batch_si
             if self.image_transform :
 
 
-                if self.model in ["resnet152", "resnet101", "vgg19", "densenet161", "alexnet", "googlenet", 
-                                  "mobilenet_v2", "shufflenet_v2_x1_0", "resnext50_32x4d", "wide_resnet50_2"]:
+                if self.model in ["resnet152", "resnet101", "vgg19", "densenet161", "alexnet", "googlenet","wide_resnet101_2", 
+                                  "mobilenet_v2", "shufflenet_v2_x1_0", "resnext50_32x4d", "wide_resnet50_2",]:
                     
                     image = resize_224(image)
 
@@ -62,6 +63,9 @@ def get_data(data_label,train_test_path,val_path,train_test_sample_size,batch_si
                 elif self.model == "efficient-netb5":
                     image = resize_456(image)
 
+                elif self.model in  ["resnext101_32x8d","resnext101_64x4d"]:
+                    image = resize_256(image)
+                    
 
                 image = self.image_transform(image) #Applies transformation to the image.
                 

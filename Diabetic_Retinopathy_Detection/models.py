@@ -2,15 +2,12 @@
 import torchvision.models as models
 from torch import nn
 
-def select_model(model_name):
-    
-    # Define dictionary of model names and their corresponding models
-    model_dict = {
+
+model_dict = {
+        "densenet161": models.densenet161,
         "resnet152": models.resnet152,
         "resnet101":models.resnet101,
         "vgg19": models.vgg19,
-        "densenet161": models.densenet161,
-        "inception_v3": models.inception_v3,
         "alexnet": models.alexnet,
         "googlenet": models.googlenet,
         "mobilenet_v2": models.mobilenet_v2,
@@ -24,6 +21,12 @@ def select_model(model_name):
         "efficient-netb6":models.efficientnet_b6,
         "efficient-netb5":models.efficientnet_b5,
     }
+
+
+def select_model(model_name):
+    
+    # Define dictionary of model names and their corresponding models
+
     
     # Return the specified model
     if model_name in model_dict:
@@ -39,7 +42,20 @@ def select_model(model_name):
                         nn.Linear(256, 5),
                         nn.Softmax(dim=1)
                         ) 
-        if  model_name == 'googlenet':
+            
+
+        elif  model_name == "resnet101":
+            model = model_func(weights = "ResNet101_Weights.DEFAULT" )
+            for parameter in model.parameters():
+                parameter.requires_grad = False
+            model.fc = nn.Sequential(
+                        nn.Linear(model.fc.in_features, 256),  
+                        nn.ReLU(), 
+                        nn.Dropout(0.4),
+                        nn.Linear(256, 5),
+                        nn.Softmax(dim=1)
+                        ) 
+        elif  model_name == 'googlenet':
             model = model_func(weights = "GoogLeNet_Weights.DEFAULT" )
             for parameter in model.parameters():
                 parameter.requires_grad = False
@@ -50,7 +66,7 @@ def select_model(model_name):
                         nn.Linear(256, 5),
                         nn.Softmax(dim=1)
                         )
-        if  model_name == "shufflenet_v2_x1_0":
+        elif  model_name == "shufflenet_v2_x1_0":
             model = model_func(weights = "ShuffleNet_V2_X1_0_Weights.DEFAULT" )
             for parameter in model.parameters():
                 parameter.requires_grad = False
@@ -61,7 +77,7 @@ def select_model(model_name):
                         nn.Linear(256, 5),
                         nn.Softmax(dim=1)
                         )
-        if  model_name == "resnext50_32x4d":
+        elif  model_name == "resnext50_32x4d":
             model = model_func(weights = "ResNeXt50_32X4D_Weights.DEFAULT" )
             for parameter in model.parameters():
                 parameter.requires_grad = False
@@ -72,7 +88,7 @@ def select_model(model_name):
                         nn.Linear(256, 5),
                         nn.Softmax(dim=1)
                         )
-        if  model_name == "resnext101_32x8d":
+        elif  model_name == "resnext101_32x8d":
             model = model_func(weights = "ResNeXt101_32X8D_Weights.DEFAULT" )
             for parameter in model.parameters():
                 parameter.requires_grad = False
@@ -83,7 +99,7 @@ def select_model(model_name):
                         nn.Linear(256, 5),
                         nn.Softmax(dim=1)
                         )
-        if  model_name == "resnext101_64x4d":
+        elif  model_name == "resnext101_64x4d":
             model = model_func(weights = "ResNeXt101_64X4D_Weights.DEFAULT" )
             for parameter in model.parameters():
                 parameter.requires_grad = False
@@ -95,7 +111,7 @@ def select_model(model_name):
                         nn.Softmax(dim=1)
                         )
         
-        if  model_name == "resnext50_32x4d":
+        elif  model_name == "resnext50_32x4d":
             model = model_func(weights = "ResNeXt50_32X4D_Weights.DEFAULT" )
             for parameter in model.parameters():
                 parameter.requires_grad = False
@@ -106,7 +122,7 @@ def select_model(model_name):
                         nn.Linear(256, 5),
                         nn.Softmax(dim=1)
                         )
-        if  model_name == "wide_resnet50_2":
+        elif  model_name == "wide_resnet50_2":
             model = model_func(weights = "Wide_ResNet50_2_Weights.DEFAULT")
             for parameter in model.parameters():
                 parameter.requires_grad = False
@@ -117,7 +133,7 @@ def select_model(model_name):
                         nn.Linear(256, 5),
                         nn.Softmax(dim=1)
                         )
-        if  model_name == "wide_resnet101_2":
+        elif  model_name == "wide_resnet101_2":
             model = model_func(weights = "Wide_ResNet101_2_Weights.DEFAULT")
             for parameter in model.parameters():
                 parameter.requires_grad = False
@@ -135,7 +151,6 @@ def select_model(model_name):
             for parameter in model.parameters():
                 parameter.requires_grad = False
             num_ftrs = model.classifier[6].in_features
-            print(num_ftrs)
             model.classifier[6] = nn.Sequential(
                         nn.Linear(num_ftrs, 256),  
                         nn.ReLU(), 
@@ -148,7 +163,6 @@ def select_model(model_name):
             for parameter in model.parameters():
                 parameter.requires_grad = False
             num_ftrs = model.classifier[6].in_features
-            print(num_ftrs)
             model.classifier[6] = nn.Sequential(
                         nn.Linear(num_ftrs, 256),  
                         nn.ReLU(), 
@@ -197,7 +211,7 @@ def select_model(model_name):
             model = model_func(weights = "MobileNet_V2_Weights.DEFAULT")
             for parameter in model.parameters():
                 parameter.requires_grad = False
-            model.classifier[1] =   model.classifier[1] =nn.Sequential(
+            model.classifier[1] =  nn.Sequential(
                         nn.Linear(model.last_channel, 256),  
                         nn.ReLU(), 
                         nn.Dropout(0.4),
@@ -208,8 +222,10 @@ def select_model(model_name):
             model = model_func(weights = "DenseNet161_Weights.DEFAULT")
             for parameter in model.parameters():
                 parameter.requires_grad = False
-            model.classifier[1] =   model.classifier[1] =nn.Sequential(
-                        nn.Linear(model.last_channel, 256),  
+            num_ftrs = model.classifier.in_features
+                
+            model.classifier = nn.Sequential(
+                        nn.Linear(num_ftrs, 256),  
                         nn.ReLU(), 
                         nn.Dropout(0.4),
                         nn.Linear(256, 5),
