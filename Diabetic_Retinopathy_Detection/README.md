@@ -1,6 +1,6 @@
 # Diabetic_Retinopathy_Detection
 
-It is an deep learning implementation for detecting diabetic disease using over 90000 eye fundus images with 15 successful CNN models with transfer learning.
+It is an deep learning implementation for detecting diabetic disease using over 90000 eye fundus images with 15 successful CNN models using transfer learning.
 
 The model is trained with all CNN architectures and overall accuracy is implemented to predict the 5 stages of DRD
 
