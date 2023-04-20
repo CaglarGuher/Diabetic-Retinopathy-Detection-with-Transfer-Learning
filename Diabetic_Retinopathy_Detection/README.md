@@ -8,4 +8,4 @@ The model is trained with all the CNN architectures and overall accuracy is impl
 *  level 2: Mild nonproliferative diabetic retinopathy.
 *  level 3: Moderate nonproliferative diabetic retinopathy. 
 *  level 4: Severe nonproliferative diabetic retinopathy. 
-*  level 5: Proliferative diabetic retinopathy.
+*  level 5: Proliferative diabetic retinopathy..
