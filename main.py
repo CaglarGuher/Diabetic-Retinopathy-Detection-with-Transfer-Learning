@@ -2,13 +2,15 @@ import torch
 import torch
 import pandas as pd 
 from models import select_model
-from utils import optimize,preprocess_image
+from utils import optimize,preprocess_image,train,test
 from paramtune import param_tuning
 import wandb
 from models import model_dict
-from train_test_eval import train , test 
+
 import json
 from collections import Counter
+
+
 
 
 data_label = pd.read_csv("C:/Users/PC/Desktop/retinopathy_data/data/labels/label.csv")

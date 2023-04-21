@@ -6,11 +6,16 @@ import random
 import matplotlib.pyplot as plt
 from torchvision import transforms
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, confusion_matrix
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader,Dataset
 from sklearn.model_selection import train_test_split
 import wandb
 from sklearn.metrics import roc_curve, auc
-
+import logging
+from ray.tune.schedulers import ASHAScheduler
+from ray.tune.suggest.optuna import OptunaSearch
+from ray.tune.progress_reporter import CLIReporter
+from ray import tune
+from PIL import Image
 def extract_bv(image):
     b,green_fundus,r = cv2.split(image)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
@@ -202,32 +207,91 @@ def detect_symptoms(img):
     return img
 
 
-def get_data(data_label,dataset,train_test_path,val_path,train_test_sample_size,batch_size,image_filter,model,validation = False):
+def get_data(data_label, train_test_path, val_path, train_test_sample_size, batch_size, image_filter, model, validation=False):
 
     
     
-    df_test_train = (data_label[data_label["validation"] == 0].sample(n = train_test_sample_size))
-    df_validation = data_label[data_label["validation"] ==1]
-    df_validation= df_validation.reset_index()
+    class data_adjust(Dataset): # Inherits from the Dataset class.
+
+        def __init__(self,df,data_path,image_filter = None,image_transform=None,model=model): # Constructor.
+            super(Dataset,self).__init__() #Calls the constructor of the Dataset class.
+            self.df = df
+            self.data_path = data_path
+            self.image_transform = image_transform
+            self.image_filter = image_filter
+            self.model = model
+
+            
+        def __len__(self):
+            return len(self.df) #Returns the number of samples in the dataset.
+        
+        def __getitem__(self,index):
+            image_id = self.df['image'][index]
+            image = cv2.imread(f'{self.data_path}/{image_id}.jpg') #Image.
+
+            resize_224 = transforms.Compose([transforms.Resize([224,224])])
+            resize_229 = transforms.Compose([transforms.Resize([229,229])])
+            resize_256 = transforms.Compose([transforms.Resize([256,256])])
+            resize_600 = transforms.Compose([transforms.Resize([600,600])])
+            resize_528 = transforms.Compose([transforms.Resize([528,528])])
+            resize_456 = transforms.Compose([transforms.Resize([456,456])])
+            
+            if self.image_filter:
+                image = self.image_filter(image)
+
+            image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+            if self.image_transform :
+
+
+                if self.model in ["resnet152", "resnet101", "vgg19", "densenet161", "alexnet", "googlenet","wide_resnet101_2", 
+                                  "mobilenet_v2", "shufflenet_v2_x1_0", "resnext50_32x4d", "wide_resnet50_2",]:
+                    
+                    image = resize_224(image)
+
+                elif self.model == "inception_v3":
+                    image = resize_229(image)
+
+                elif self.model == "efficient-netb7":
+                    image = resize_600(image)
+                
+                elif self.model == "efficient-netb6":
+                    image = resize_528(image)
+
+                elif self.model == "efficient-netb5":
+                    image = resize_456(image)
+
+                elif self.model in  ["resnext101_32x8d","resnext101_64x4d"]:
+                    image = resize_256(image)
+                    
+
+                image = self.image_transform(image) #Applies transformation to the image.
+                
+            
+            label = self.df['level'][index] #Label.
+        
+            return image,torch.tensor(label) #If train == True, return image & label.
+
+
+    logging.info("Starting data preparation")
+    
+    df_test_train = (data_label[data_label["validation"] == 0].sample(n=train_test_sample_size))
+    df_validation = data_label[data_label["validation"] == 1]
+    df_validation = df_validation.reset_index()
     max_count = df_test_train["level"].value_counts().max()
     balanced_dfs = []
 
+    logging.info("Balancing the train-test dataset")
 
-    # For each unique class label
     for label in df_test_train["level"].unique():
-        # Get the subset of samples with the current label
         subset = df_test_train[df_test_train["level"] == label]
-        
-        # Oversample the subset to match the maximum count
         oversampled_subset = subset.sample(n=max_count, replace=True)
-        
-        # Append the oversampled subset to the balanced dataset list
         balanced_dfs.append(oversampled_subset)
-        
-    # Concatenate the balanced datasets into a single dataframe
+
     balanced_train_test = pd.concat(balanced_dfs).reset_index()
 
-   
+
+    logging.info("Setting up data transforms")
+
 
     train_test_transform = transforms.Compose([
         transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
@@ -245,37 +309,48 @@ def get_data(data_label,dataset,train_test_path,val_path,train_test_sample_size,
     ])
 
 
-    if validation == True:
-        valid_data = dataset(df_validation,f'{val_path}',image_transform = valid_transform,image_filter=image_filter)
-        valid_dataloader = DataLoader(valid_data,batch_size =8,shuffle=False) #validate model with 2500 eye images (500 for each class)
-        test_dataloader,train_dataloader = 0,0
+    logging.info("Preparing DataLoaders")
+
+    if validation ==True:
+        valid_data = data_adjust(df_validation, f'{val_path}', image_transform=valid_transform, image_filter=image_filter, model =model)
+        valid_dataloader = DataLoader(valid_data, batch_size=8, shuffle=False)
+        test_dataloader, train_dataloader = 0, 0
+
+        logging.info("Validation DataLoader prepared")
     else:
-        train_set,valid_set = train_test_split( data_train_Test,test_size=0.2,random_state=42)
-        data_train_Test = dataset(balanced_train_test,f'{train_test_path}',image_transform = train_test_transform,image_filter=image_filter,model = model)
-        train_dataloader = DataLoader(train_set,batch_size=batch_size,shuffle=True) #DataLoader for train_set.
 
-        test_dataloader = DataLoader(valid_set,batch_size=batch_size,shuffle=False) #DataLoader for test_set.
+        data_train_Test = data_adjust(balanced_train_test, f'{train_test_path}', image_transform=train_test_transform, image_filter=image_filter, model=model)
+        train_set, valid_set = train_test_split(data_train_Test, test_size=0.2, random_state=42)
+
+        train_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+        test_dataloader = DataLoader(valid_set, batch_size=batch_size, shuffle=False)
         valid_dataloader = 0
+        logging.info("Train and Test DataLoaders prepared")
 
-    return train_dataloader,test_dataloader,valid_dataloader
+    logging.info("Data preparation completed")
 
+    return train_dataloader, test_dataloader, valid_dataloader
 
-def optimize(model,model_name,train,test,device,data_label,path,path_for_val,tt_samp_size,batch_size,image_filter,lr,Epoch):
+def optimize(model, model_name, train, test, device, data_label, path, path_for_val, tt_samp_size, batch_size, image_filter, lr, Epoch):
 
-        model.to(device)
-        train_loader,test_loader,valid_loader = get_data(data_label,path,path_for_val,tt_samp_size = 20,
-                                                   batch_size=batch_size,image_filter=image_filter , model = model_name)  
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-        loss_fn = torch.nn.CrossEntropyLoss() 
+    logging.info(f"Starting optimization for model: {model_name}")
 
+    
+    model.to(device)
+    train_loader, test_loader, valid_loader = get_data(data_label, path, path_for_val, tt_samp_size,
+                                                       batch_size=batch_size, image_filter=image_filter, model=model_name)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    loss_fn = torch.nn.CrossEntropyLoss()
 
-        for epoch in range(Epoch):
-            train_loss, train_acc = train(train_loader, model, loss_fn, optimizer, device=device)
-            valid_loss, valid_acc = test(test_loader, model, loss_fn, device=device)
-            wandb.log({"train_acc": train_acc, "train_loss": train_loss,"test_acc":valid_acc,"test_loss":valid_loss})      
-        
-        return {"loss": valid_loss}
+    logging.info("Training the model")
+    for epoch in range(Epoch):
+        train_loss, train_acc = train(train_loader, model, loss_fn, optimizer, device=device)
+        valid_loss, valid_acc = test(test_loader, model, loss_fn, device=device)
+        wandb.log({"train_acc": train_acc, "train_loss": train_loss, "test_acc": valid_acc, "test_loss": valid_loss})
+        logging.info(f"Epoch {epoch + 1}/{Epoch} - Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Test Loss: {valid_loss:.4f}, Test Acc: {valid_acc:.4f}")
 
+    logging.info("Optimization completed")
+    return {"loss": valid_loss}
 
 def evaluate_model(model, Data_loaeder, device):
     model.eval()
@@ -330,3 +405,95 @@ def evaluate_classification_metrics(y_true, y_pred):
         'recall': recall,
         'confusion_matrix': conf_matrix
     }
+
+def train(dataloader,model, loss_fn, optimizer, device):
+        
+        model.train()
+        running_loss = 0
+        correct = 0
+        total = 0
+
+        for batch, (x, y) in enumerate(dataloader):
+            x, y = x.to(device), y.to(device)
+
+            optimizer.zero_grad()
+            output = model(x)
+            loss   = loss_fn(output, y)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+
+            # Calculate accuracy
+            _, predicted = torch.max(output.data, 1)
+            total += y.size(0)
+            correct += (predicted == y).sum().item()
+        
+        avg_loss = running_loss / len(dataloader)
+        accuracy = 100 * correct / total
+
+        print('Train Loss: {:.4f} | Train Accuracy: {:.2f}%'.format(avg_loss, accuracy))
+
+        return avg_loss, accuracy
+
+
+def test(dataloader,model,loss_fn, device):
+
+    model.eval() 
+    running_loss = 0
+    correct = 0
+    total = 0
+
+    with torch.no_grad(): 
+        
+        for (x, y) in dataloader:
+            x, y = x.to(device), y.to(device)  # Move data to GPU
+            
+            output        = model(x)
+            loss          = loss_fn(output, y).item()
+            running_loss += loss
+            
+            # Calculate accuracy
+            _, predicted = torch.max(output.data, 1)
+            total += y.size(0)
+            correct += (predicted == y).sum().item()
+
+    avg_loss = running_loss / len(dataloader)
+    accuracy = 100 * correct / total
+
+    print('Validation Loss: {:.4f} | Validation Accuracy: {:.2f}%'.format(avg_loss, accuracy))
+
+    return avg_loss, accuracy
+
+
+
+def eval(model,device,dataloader):
+
+    model.eval()
+
+    # Create empty lists to store predictions and labels
+    all_preds = []
+    all_labels = []
+
+    # Iterate over the validation set and make predictions
+
+    with torch.no_grad():
+        for images, labels in dataloader:
+            images = images.to(device)
+            labels = labels.to(device)
+            preds = model(images)
+            all_preds.extend(preds.argmax(dim=1).cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+
+    # Create the confusion matrix
+    cm = confusion_matrix(all_labels, all_preds)
+
+    # Print the confusion matrix
+
+    print(cm)
+
+    accuracy = np.sum(np.diag(cm)) / np.sum(cm)
+
+    print(f"accuracy of the model is  = {accuracy}")
+
+
+            
