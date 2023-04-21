@@ -13,7 +13,7 @@ path = "C:/Users/PC/Desktop/retinopathy_data/data/test_train_images"
 path_for_validation = "C:/Users/PC/Desktop/retinopathy_data/data/validation_images"
 torch.cuda.empty_cache()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+Epoch = 15
 
 
 for model_name in model_dict:
@@ -21,7 +21,7 @@ for model_name in model_dict:
     model = select_model(model_name)
     wandb.init(
         # set the wandb project where this run will be logged
-        project="my-awesome-project",
+        project="Diabetic Retinopath Detection",
         name = model_name
         # track hyperparameters and run metadata
     )
@@ -35,7 +35,7 @@ for model_name in model_dict:
         loss_fn = torch.nn.CrossEntropyLoss() 
 
 
-        for epoch in range(15):
+        for epoch in range(Epoch):
             train_loss, train_acc = train(train_loader, model, loss_fn, optimizer, device=device)
             valid_loss, valid_acc = test(test_loader, model, loss_fn, device=device)
             wandb.log({"train_acc": train_acc, "train_loss": train_loss,"test_acc":valid_acc,"test_loss":valid_loss})      
