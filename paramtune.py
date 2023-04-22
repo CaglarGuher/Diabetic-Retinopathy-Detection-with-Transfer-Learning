@@ -6,11 +6,13 @@ from ray import tune
 from ray.tune.schedulers import ASHAScheduler
 from ray.tune.suggest.optuna import OptunaSearch
 from ray.tune.progress_reporter import CLIReporter
-
+from data_prep import get_data
 from models import model_dict,select_model
-from utils import get_data,train,test,preprocess_image
-
+from utils import train,test,preprocess_image
 from ray.air import session
+
+
+
 
 
 logging.getLogger("ray.tune").setLevel(logging.WARNING)
@@ -45,7 +47,7 @@ def param_tuning(data_label, path, path_for_val, device):
             optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"])
             loss_fn = torch.nn.CrossEntropyLoss()
 
-            train_data, test_data, valid_data = get_data(
+            train_data, test_data, _ = get_data(
                 data_label,
                 path,
                 path_for_val,
@@ -60,8 +62,8 @@ def param_tuning(data_label, path, path_for_val, device):
             valid_loader = test_data
             
             for epoch in range(10):
-                train_loss, train_acc = train(train_loader, model, loss_fn, optimizer, device=device)
-                valid_loss, valid_acc = test(valid_loader, model, loss_fn, device=device)
+                _, _ = train(train_loader, model, loss_fn, optimizer, device=device)
+                valid_loss, _ = test(valid_loader, model, loss_fn, device=device)
                 session.report({"loss": valid_loss})
 
             return {"loss": valid_loss}

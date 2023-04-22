@@ -90,4 +90,3 @@ for i in range(0,len(dataset_total)):
                 except:
                         print(f"the image number of {i} has problem" )
        
-print(total)

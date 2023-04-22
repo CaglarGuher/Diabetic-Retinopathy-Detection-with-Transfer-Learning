@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from torchvision import transforms
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, confusion_matrix
 from torch.utils.data import DataLoader,Dataset
-from sklearn.model_selection import train_test_split
 import wandb
 from sklearn.metrics import roc_curve, auc
 import logging
@@ -140,128 +139,7 @@ def crop_image(img,tol=7):
 
 
 
-def get_data(data_label, train_test_path, val_path, train_test_sample_size, batch_size, image_filter, model, validation=False):
 
-    
-    
-    class data_adjust(Dataset): # Inherits from the Dataset class.
-
-        def __init__(self,df,data_path,image_filter = None,image_transform=None,model=model): # Constructor.
-            super(Dataset,self).__init__() #Calls the constructor of the Dataset class.
-            self.df = df
-            self.data_path = data_path
-            self.image_transform = image_transform
-            self.image_filter = image_filter
-            self.model = model
-
-            
-        def __len__(self):
-            return len(self.df) #Returns the number of samples in the dataset.
-        
-        def __getitem__(self,index):
-            image_id = self.df['image'][index]
-            image = cv2.imread(f'{self.data_path}/{image_id}.jpg') #Image.
-
-            resize_224 = transforms.Compose([transforms.Resize([224,224])])
-            resize_229 = transforms.Compose([transforms.Resize([229,229])])
-            resize_256 = transforms.Compose([transforms.Resize([256,256])])
-            resize_600 = transforms.Compose([transforms.Resize([600,600])])
-            resize_528 = transforms.Compose([transforms.Resize([528,528])])
-            resize_456 = transforms.Compose([transforms.Resize([456,456])])
-            
-            if self.image_filter:
-                image = self.image_filter(image)
-
-            image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-            if self.image_transform :
-
-
-                if self.model in ["resnet152", "resnet101", "vgg19", "densenet161", "alexnet", "googlenet","wide_resnet101_2", 
-                                  "mobilenet_v2", "shufflenet_v2_x1_0", "resnext50_32x4d", "wide_resnet50_2",]:
-                    
-                    image = resize_224(image)
-
-                elif self.model == "inception_v3":
-                    image = resize_229(image)
-
-                elif self.model == "efficient-netb7":
-                    image = resize_600(image)
-                
-                elif self.model == "efficient-netb6":
-                    image = resize_528(image)
-
-                elif self.model == "efficient-netb5":
-                    image = resize_456(image)
-
-                elif self.model in  ["resnext101_32x8d","resnext101_64x4d"]:
-                    image = resize_256(image)
-                    
-
-                image = self.image_transform(image)
-                
-            
-            label = self.df['level'][index] 
-            return image,torch.tensor(label) 
-
-
-    logging.info("Starting data preparation")
-    
-    df_test_train = (data_label[data_label["validation"] == 0].sample(n=train_test_sample_size))
-    df_validation = data_label[data_label["validation"] == 1].sample(n = 250)
-    df_validation = df_validation.reset_index()
-    max_count = df_test_train["level"].value_counts().max()
-    balanced_dfs = []
-
-    logging.info("Balancing the train-test dataset")
-
-    for label in df_test_train["level"].unique():
-        subset = df_test_train[df_test_train["level"] == label]
-        oversampled_subset = subset.sample(n=max_count, replace=True)
-        balanced_dfs.append(oversampled_subset)
-
-    balanced_train_test = pd.concat(balanced_dfs).reset_index()
-
-
-    logging.info("Setting up data transforms")
-
-
-    train_test_transform = transforms.Compose([
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
-        transforms.RandomHorizontalFlip(),
-        transforms.GaussianBlur(kernel_size=3),
-        transforms.RandomAffine(degrees=(-10, 10), translate=(0.1, 0.1), scale=(0.8, 1.2), shear=(-10, 10)),
-        transforms.RandomVerticalFlip(),
-        transforms.RandomRotation(degrees=[-10, 10]),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-    valid_transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-
-
-    logging.info("Preparing DataLoaders")
-
-    if validation ==True:
-        valid_data = data_adjust(df_validation, f'{val_path}', image_transform=valid_transform, image_filter=image_filter, model =model)
-        valid_dataloader = DataLoader(valid_data, batch_size=1, shuffle=False)
-        test_dataloader, train_dataloader = 0, 0
-
-        logging.info("Validation DataLoader prepared")
-    else:
-
-        data_train_Test = data_adjust(balanced_train_test, f'{train_test_path}', image_transform=train_test_transform, image_filter=image_filter, model=model)
-        train_set, valid_set = train_test_split(data_train_Test, test_size=0.2, random_state=42)
-
-        train_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-        test_dataloader = DataLoader(valid_set, batch_size=batch_size, shuffle=False)
-        valid_dataloader = 0
-        logging.info("Train and Test DataLoaders prepared")
-
-    logging.info("Data preparation completed")
-
-    return train_dataloader, test_dataloader, valid_dataloader
 
 def optimize(model, model_name, train, test, device, data_label, path, path_for_val, tt_samp_size, batch_size, image_filter, lr, Epoch):
 
@@ -398,16 +276,7 @@ def test(dataloader,model,loss_fn, device):
 
 
 def get_predictions(model, data_loader,device):
-    """
-    Takes a trained PyTorch model and a DataLoader as input, and returns the model's predictions.
 
-    Args:
-        model (torch.nn.Module): A trained PyTorch model.
-        data_loader (torch.utils.data.DataLoader): A DataLoader containing the input data.
-
-    Returns:
-        List[torch.Tensor]: A list of PyTorch tensors containing the model's predictions.
-    """
 
     model.eval() 
     predictions = []  
