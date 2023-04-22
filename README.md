@@ -9,6 +9,7 @@ This project aims to develop a deep learning-based system for the detection of D
 *  level 5: Proliferative diabetic retinopathy.
 
 
+
 by employing various Convolutional Neural Networks (CNN) architectures with over 90000 eye fundus images. Diabetic Retinopathy is a diabetes-related complication that affects the retina, which is the light-sensitive layer at the back of the eye. If left untreated, DR can lead to severe vision loss or even blindness. Early detection and intervention are crucial for mitigating the risk of vision loss in patients with diabetes.
 
 The project utilizes 16 different CNN models to classify images of the retina into different stages of DR, ranging from no DR to severe DR. The employed models are as follows:
