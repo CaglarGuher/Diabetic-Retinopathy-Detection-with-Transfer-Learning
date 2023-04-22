@@ -207,7 +207,7 @@ def get_data(data_label, train_test_path, val_path, train_test_sample_size, batc
     logging.info("Starting data preparation")
     
     df_test_train = (data_label[data_label["validation"] == 0].sample(n=train_test_sample_size))
-    df_validation = data_label[data_label["validation"] == 1].sample(n = 1)
+    df_validation = data_label[data_label["validation"] == 1].sample(n = 250)
     df_validation = df_validation.reset_index()
     max_count = df_test_train["level"].value_counts().max()
     balanced_dfs = []
@@ -245,7 +245,7 @@ def get_data(data_label, train_test_path, val_path, train_test_sample_size, batc
 
     if validation ==True:
         valid_data = data_adjust(df_validation, f'{val_path}', image_transform=valid_transform, image_filter=image_filter, model =model)
-        valid_dataloader = DataLoader(valid_data, batch_size=8, shuffle=False)
+        valid_dataloader = DataLoader(valid_data, batch_size=1, shuffle=False)
         test_dataloader, train_dataloader = 0, 0
 
         logging.info("Validation DataLoader prepared")
@@ -419,7 +419,8 @@ def get_predictions(model, data_loader,device):
 
         
             outputs = model(inputs)
-            predictions.append(outputs)
+            _, predicted = torch.max(outputs.data, 1)
+            predictions.append(predicted)
        
             if (i + 1) % 10 == 0:
                 logging.info(f'Processed {i + 1} batches out of {len(data_loader)}')
