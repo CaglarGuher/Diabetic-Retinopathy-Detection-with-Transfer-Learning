@@ -4,33 +4,33 @@ from torch import nn
 
 
 model_dict = {
-        "densenet161": models.densenet161,
-        "resnet152": models.resnet152,
-        "resnet101":models.resnet101,
-        "vgg19": models.vgg19,
-        "alexnet": models.alexnet,
-        "googlenet": models.googlenet,
-        "mobilenet_v2": models.mobilenet_v2,
-        "shufflenet_v2_x1_0": models.shufflenet_v2_x1_0,
-        "resnext50_32x4d": models.resnext50_32x4d,
-        "resnext101_32x8d":models.resnext101_32x8d,
-        "resnext101_64x4d":models.resnext101_64x4d,
-        "wide_resnet50_2": models.wide_resnet50_2,
-        "wide_resnet101_2":models.wide_resnet101_2,
-        "efficient-netb7":models.efficientnet_b7,
-        "efficient-netb6":models.efficientnet_b6,
-        "efficient-netb5":models.efficientnet_b5,
-    }
+    "densenet161": {"model": models.densenet161, "weight": 0.6},
+    "resnet152": {"model": models.resnet152, "weight": 0.55},
+    "resnet101": {"model": models.resnet101, "weight": 0.5},
+    "vgg19": {"model": models.vgg19, "weight": 0.4},
+    "alexnet": {"model": models.alexnet, "weight": 0.25},
+    "googlenet": {"model": models.googlenet, "weight": 0.45},
+    "mobilenet_v2": {"model": models.mobilenet_v2, "weight": 0.35},
+    "shufflenet_v2_x1_0": {"model": models.shufflenet_v2_x1_0, "weight": 0.3},
+    "resnext50_32x4d": {"model": models.resnext50_32x4d, "weight": 0.7},
+    "resnext101_32x8d": {"model": models.resnext101_32x8d, "weight": 0.8},
+    "resnext101_64x4d": {"model": models.resnext101_64x4d, "weight": 0.85},
+    "wide_resnet50_2": {"model": models.wide_resnet50_2, "weight": 0.65},
+    "wide_resnet101_2": {"model": models.wide_resnet101_2, "weight": 0.75},
+    "efficient-netb7": {"model": models.efficientnet_b7, "weight": 1.0},
+    "efficient-netb6": {"model": models.efficientnet_b6, "weight": 0.95},
+    "efficient-netb5": {"model": models.efficientnet_b5, "weight": 0.9},
+}
 
 
 def select_model(model_name):
     
-    # Define dictionary of model names and their corresponding models
+   
 
     
-    # Return the specified model
+ 
     if model_name in model_dict:
-        model_func = model_dict[model_name]
+        model_func = model_dict[model_name]["model"]
         if  model_name == "resnet152":
             model = model_func(weights = "ResNet152_Weights.DEFAULT" )
             for parameter in model.parameters():

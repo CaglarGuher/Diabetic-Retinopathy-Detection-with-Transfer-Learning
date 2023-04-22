@@ -14,7 +14,7 @@ from ray.air import session
 
 
 logging.getLogger("ray.tune").setLevel(logging.WARNING)
-# Set up the logging configuration
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] - %(message)s",
@@ -36,11 +36,11 @@ def param_tuning(data_label, path, path_for_val, device):
         model = select_model(model_name)
         model.to(device)
 
-        model_ray = ray.put(model)  # Store the model in the Ray object store
+        model_ray = ray.put(model) 
 
         def train_test_loop(config):
             
-            model = ray.get(model_ray)  # Get the model from the Ray object store
+            model = ray.get(model_ray) 
 
             optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"])
             loss_fn = torch.nn.CrossEntropyLoss()

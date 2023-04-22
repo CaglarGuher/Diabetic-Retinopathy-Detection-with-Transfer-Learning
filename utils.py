@@ -42,8 +42,7 @@ def extract_bv(image):
     ret,fin = cv2.threshold(im,15,255,cv2.THRESH_BINARY_INV)
     newfin = cv2.erode(fin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)	
 
-    # removing blobs of unwanted bigger chunks taking in consideration they are not straight lines like blood
-    #vessels and also in an interval of area
+    
     fundus_eroded = cv2.bitwise_not(newfin)	
     xmask = np.ones(fundus_eroded.shape[:2], dtype="uint8") * 255
     xcontours, xhierarchy = cv2.findContours(fundus_eroded.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)	
@@ -70,7 +69,7 @@ def blurry_or_not(laplacian_value):
         return 1
     
 def preprocess_image(image):
-    # Ensure image is color image with 3 channels
+  
 
     lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
@@ -107,13 +106,12 @@ def show_images_by_level(t_t_img_dir,dataset_total,filter=None):
             axs[5 * j + i].imshow((images[j]))
             axs[5 * j + i].set_title(f'Level: {level}')
             axs[5 * j + i].axis('off')
-            # Add label to the bottom of the image
+         
             axs[5 * j + i].text(0.5, -0.1, (cv2.Laplacian(extract_bv(images[j]), cv2.CV_64F).var()), transform=axs[5 * j + i].transAxes,
                                  fontsize=12, ha='center', va='bottom')
             
     plt.tight_layout()
     plt.show()
-
 
 
 
@@ -139,72 +137,7 @@ def crop_image(img,tol=7):
             img3=img[:,:,2][np.ix_(mask.any(1),mask.any(0))]
             img = np.stack([img1,img2,img3],axis=-1)
         return img
-def crop_image_only_outside(img,tol=0):
-    # img is 2D or 3D image data
-    # tol  is tolerance
-    mask = img>tol
-    if img.ndim==3:
-        mask = mask.all(2)
-    m,n = mask.shape
-    mask0,mask1 = mask.any(0),mask.any(1)
-    col_start,col_end = mask0.argmax(),n-mask0[::-1].argmax()
-    row_start,row_end = mask1.argmax(),m-mask1[::-1].argmax()
-    return img[row_start:row_end,col_start:col_end]
 
-def crop_eye_image(img):
-    # Load the image
-
-
-    # Convert the image to grayscale
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    # Threshold the image to create a binary mask of the eye
-    _, mask = cv2.threshold(gray, 8, 255, cv2.THRESH_BINARY)
-
-    # Find the contours of the eye in the mask
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Find the largest contour (the outer boundary of the eye)
-    largest_contour = max(contours, key=cv2.contourArea)
-
-    # Find the bounding box of the largest contour
-    x, y, w, h = cv2.boundingRect(largest_contour)
-
-    # Crop the image to the bounding box
-    cropped_img = img[y:y+h, x:x+w]
-
-    # Return the cropped image
-    return cropped_img
-
-
-
-
-
-
-def detect_symptoms(img):
-    # Load the image
-    # Convert the image to grayscale
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    # Apply a median filter to remove noise
-    gray = cv2.medianBlur(gray, 5)
-
-    # Apply adaptive thresholding to segment the blood vessels and little dots
-    thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-
-    # Perform morphological opening to remove small objects
-    kernel = np.ones((3, 3), np.uint8)
-    opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
-
-    # Detect microaneurysms
-    circles = cv2.HoughCircles(opening, cv2.HOUGH_GRADIENT, 1, 200, param1=75, param2=25, minRadius=20, maxRadius=50)
-
-    # Draw circles around the microaneurysms
-    if circles is not None:
-        circles = np.round(circles[0, :]).astype("int")
-        for (x, y, r) in circles:
-            cv2.circle(img, (x, y), r, (0, 255, 0), 2)
-    return img
 
 
 def get_data(data_label, train_test_path, val_path, train_test_sample_size, batch_size, image_filter, model, validation=False):
@@ -264,18 +197,17 @@ def get_data(data_label, train_test_path, val_path, train_test_sample_size, batc
                     image = resize_256(image)
                     
 
-                image = self.image_transform(image) #Applies transformation to the image.
+                image = self.image_transform(image)
                 
             
-            label = self.df['level'][index] #Label.
-        
-            return image,torch.tensor(label) #If train == True, return image & label.
+            label = self.df['level'][index] 
+            return image,torch.tensor(label) 
 
 
     logging.info("Starting data preparation")
     
     df_test_train = (data_label[data_label["validation"] == 0].sample(n=train_test_sample_size))
-    df_validation = data_label[data_label["validation"] == 1]
+    df_validation = data_label[data_label["validation"] == 1].sample(n = 1)
     df_validation = df_validation.reset_index()
     max_count = df_test_train["level"].value_counts().max()
     balanced_dfs = []
@@ -368,7 +300,7 @@ def evaluate_model(model, Data_loaeder, device):
 
 
 def plot_roc_curve(y_true, y_pred_prob, n_classes):
-    # Compute ROC curve and ROC area for each class
+  
     fpr = dict()
     tpr = dict()
     roc_auc = dict()
@@ -377,7 +309,7 @@ def plot_roc_curve(y_true, y_pred_prob, n_classes):
         fpr[i], tpr[i], _ = roc_curve(y_true == i, y_pred_prob[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
 
-    # Plot ROC curve for each class
+    
     plt.figure()
     for i in range(n_classes):
         plt.plot(fpr[i], tpr[i], label=f'ROC curve of class {i} (area = {roc_auc[i]:.2f})')
@@ -446,13 +378,13 @@ def test(dataloader,model,loss_fn, device):
     with torch.no_grad(): 
         
         for (x, y) in dataloader:
-            x, y = x.to(device), y.to(device)  # Move data to GPU
+            x, y = x.to(device), y.to(device) 
             
             output        = model(x)
             loss          = loss_fn(output, y).item()
             running_loss += loss
             
-            # Calculate accuracy
+        
             _, predicted = torch.max(output.data, 1)
             total += y.size(0)
             correct += (predicted == y).sum().item()
@@ -465,35 +397,34 @@ def test(dataloader,model,loss_fn, device):
     return avg_loss, accuracy
 
 
+def get_predictions(model, data_loader,device):
+    """
+    Takes a trained PyTorch model and a DataLoader as input, and returns the model's predictions.
 
-def eval(model,device,dataloader):
+    Args:
+        model (torch.nn.Module): A trained PyTorch model.
+        data_loader (torch.utils.data.DataLoader): A DataLoader containing the input data.
 
-    model.eval()
+    Returns:
+        List[torch.Tensor]: A list of PyTorch tensors containing the model's predictions.
+    """
 
-    # Create empty lists to store predictions and labels
-    all_preds = []
-    all_labels = []
-
-    # Iterate over the validation set and make predictions
+    model.eval() 
+    predictions = []  
 
     with torch.no_grad():
-        for images, labels in dataloader:
-            images = images.to(device)
-            labels = labels.to(device)
-            preds = model(images)
-            all_preds.extend(preds.argmax(dim=1).cpu().numpy())
-            all_labels.extend(labels.cpu().numpy())
+        for i, batch in enumerate(data_loader):
+            inputs = batch[0]  
+            inputs = inputs.to(device) 
 
-    # Create the confusion matrix
-    cm = confusion_matrix(all_labels, all_preds)
+        
+            outputs = model(inputs)
+            predictions.append(outputs)
+       
+            if (i + 1) % 10 == 0:
+                logging.info(f'Processed {i + 1} batches out of {len(data_loader)}')
 
-    # Print the confusion matrix
-
-    print(cm)
-
-    accuracy = np.sum(np.diag(cm)) / np.sum(cm)
-
-    print(f"accuracy of the model is  = {accuracy}")
+    return predictions
 
 
             

@@ -20,7 +20,7 @@ import os
 source_dir = "C:/Users/PC/Desktop/retinopathy_data/data/test_train_images"
 destination_dir = "C:/Users/PC/Desktop/retinopathy_data/data/validation_images"
 
-# Loop through the DataFrame and move images to the destination directory based on the level
+
 for i, row in label_for_level_0[-10000:].iterrows():
     image_name = row['image']
     level = row['level']
@@ -30,7 +30,7 @@ for i, row in label_for_level_0[-10000:].iterrows():
     os.rename(src_path, dst_path)
 
 
-# Loop through the DataFrame and move images to the destination directory based on the level
+
 for i, row in label_for_level_1[-2500:].iterrows():
     image_name = row['image']
     level = row['level']
@@ -39,7 +39,7 @@ for i, row in label_for_level_1[-2500:].iterrows():
     dst_path = f"{destination_dir}/{image_name}.jpg"
     os.rename(src_path, dst_path)
 
-# Loop through the DataFrame and move images to the destination directory based on the level
+
 for i, row in label_for_level_2[-1250:].iterrows():
     image_name = row['image']
     level = row['level']
@@ -48,7 +48,7 @@ for i, row in label_for_level_2[-1250:].iterrows():
     dst_path = f"{destination_dir}/{image_name}.jpg"
     os.rename(src_path, dst_path)
 
-# Loop through the DataFrame and move images to the destination directory based on the level
+
 for i, row in label_for_level_3[-450:].iterrows():
     image_name = row['image']
     level = row['level']

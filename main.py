@@ -8,7 +8,7 @@ import wandb
 from models import model_dict
 
 import json
-from collections import Counter
+
 
 
 
@@ -33,10 +33,10 @@ for model_name in model_dict:
 
     model = select_model(model_name)
     wandb.init(
-        # set the wandb project where this run will be logged
+       
         project="Diabetic Retinopath Detection",
         name = model_name
-        # track hyperparameters and run metadata
+      
     )
     
     optimize(model,model_name,train,test,device,data_label,path,
