@@ -8,6 +8,19 @@ import logging
 from PIL import Image
 
 
+
+logging.getLogger("optuna").setLevel(logging.WARNING)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] - %(message)s",
+    handlers=[
+        logging.FileHandler("param_tuning.log"),
+        logging.StreamHandler()
+    ]
+)
+
+
 class data_adjust(Dataset):
 
     def __init__(self, df, data_path, model, image_filter=None, image_transform=None):

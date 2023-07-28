@@ -1,21 +1,14 @@
 import logging
 import json
-import ray
 import torch
-from ray import tune
-from ray.tune.schedulers import ASHAScheduler
-from ray.tune.suggest.optuna import OptunaSearch
-from ray.tune.progress_reporter import CLIReporter
 from data_prep import get_data
 from models import model_dict,select_model
 from utils import train,test,preprocess_image
-from ray.air import session
+import optuna
 
 
 
-
-
-logging.getLogger("ray.tune").setLevel(logging.WARNING)
+logging.getLogger("optuna").setLevel(logging.WARNING)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,7 +19,12 @@ logging.basicConfig(
     ]
 )
 
+
+
+
+
 def param_tuning(data_label, path, path_for_val, device):
+
     logging.info("Starting hyperparameter tuning")
 
     best_results = {}
@@ -35,14 +33,14 @@ def param_tuning(data_label, path, path_for_val, device):
 
         logging.info(f"Currently working on {model_name}")
 
-        model = select_model(model_name)
-        model.to(device)
+        def train_test_loop(trial):
+            config = {
+                "lr": trial.suggest_categorical("lr", [1e-4, 5e-4, 5e-3, 1e-3]),
+                "batch_size": trial.suggest_categorical("batch_size", [2, 4, 8, 16]),
+            }
 
-        model_ray = ray.put(model) 
-
-        def train_test_loop(config):
-            
-            model = ray.get(model_ray) 
+            model = select_model(model_name)
+            model.to(device)
 
             optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"])
             loss_fn = torch.nn.CrossEntropyLoss()
@@ -51,7 +49,7 @@ def param_tuning(data_label, path, path_for_val, device):
                 data_label,
                 path,
                 path_for_val,
-                train_test_sample_size=100,
+                train_test_sample_size=10,
                 batch_size=config["batch_size"],
                 image_filter=preprocess_image,
                 model=model_name,
@@ -60,55 +58,27 @@ def param_tuning(data_label, path, path_for_val, device):
 
             train_loader = train_data
             valid_loader = test_data
-            
-            for epoch in range(10):
+
+            for epoch in range(1):
                 _, _ = train(train_loader, model, loss_fn, optimizer, device=device)
                 valid_loss, _ = test(valid_loader, model, loss_fn, device=device)
-                session.report({"loss": valid_loss})
+                trial.report(valid_loss, epoch)
 
-            return {"loss": valid_loss}
+                if trial.should_prune():
+                    raise optuna.TrialPruned()
 
-        def run_search():
-            config = {
-                "lr": tune.choice([1e-4, 5e-4, 5e-3, 1e-3]),
-                "batch_size": tune.choice([2, 4, 8, 16]),
-            }
+            return valid_loss
 
-            scheduler = ASHAScheduler(
-                metric="loss",
-                mode="min",
-                max_t=2,
-                grace_period=1,
-                reduction_factor=2,
-            )
+        study = optuna.create_study(direction="minimize")
+        study.optimize(train_test_loop, n_trials=1)  # You can adjust the number of trials as needed.
 
-            reporter = CLIReporter(
-                metric_columns=["loss", "training_iteration"],
-                parameter_columns=["batch_size", "lr"],
-            )
-
-            result = tune.run(
-                train_test_loop,
-                config=config,
-                num_samples=1,
-                progress_reporter=reporter,
-                resources_per_trial={"cpu": 0, "gpu": 1},
-                checkpoint_at_end=True,
-                metric="loss",
-                mode="min",
-                search_alg=OptunaSearch(),
-                verbose=1
-            )
-
-            best_trial = result.get_best_trial("loss", "min", "last")
-            best_results[model_name] = {
-                "config": best_trial.config,
-                "validation_loss": best_trial.last_result["loss"],
-            }
-            logging.info(f"Best trial config: {best_trial.config}")
-            logging.info(f"Best trial final validation loss: {best_trial.last_result['loss']}")
-
-        run_search()
+        best_trial = study.best_trial
+        best_results[model_name] = {
+            "config": best_trial.params,
+            "validation_loss": best_trial.value,
+        }
+        logging.info(f"Best trial config: {best_trial.params}")
+        logging.info(f"Best trial final validation loss: {best_trial.value}")
 
     logging.info("Hyperparameter tuning completed")
 
