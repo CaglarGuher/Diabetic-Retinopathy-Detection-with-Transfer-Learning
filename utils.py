@@ -136,25 +136,39 @@ def crop_image(img,tol=7):
 
 
 def optimize(model, model_name, train, test, device, data_label, path, path_for_val, tt_samp_size, batch_size, image_filter, lr, Epoch):
-
     logging.info(f"Starting optimization for model: {model_name}")
 
-    
     model.to(device)
-    train_loader, test_loader, valid_loader = get_data(data_label, path, path_for_val, tt_samp_size,
+    train_loader,valid_loader, test_loader  = get_data(data_label, path, path_for_val, tt_samp_size,
                                                        batch_size=batch_size, image_filter=image_filter, model=model_name)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = torch.nn.CrossEntropyLoss()
 
+    best_valid_acc = 0.0
+    best_model_state_dict = None
+
     logging.info("Training the model")
     for epoch in range(Epoch):
         train_loss, train_acc = train(train_loader, model, loss_fn, optimizer, device=device)
-        valid_loss, valid_acc = test(test_loader, model, loss_fn, device=device)
-        wandb.log({"train_acc": train_acc, "train_loss": train_loss, "test_acc": valid_acc, "test_loss": valid_loss})
-        logging.info(f"Epoch {epoch + 1}/{Epoch} - Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Test Loss: {valid_loss:.4f}, Test Acc: {valid_acc:.4f}")
+        valid_loss, valid_acc = test(valid_loader, model, loss_fn, device=device)
+        wandb.log({"train_acc": train_acc, "train_loss": train_loss, "valid_acc": valid_acc, "valid_loss": valid_loss})
+        logging.info(f"Epoch {epoch + 1}/{Epoch} - Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Valid Loss: {valid_loss:.4f}, Valid Acc: {valid_acc:.4f}")
+
+        # Check if validation accuracy improved, if yes, save the model state
+        if valid_acc > best_valid_acc:
+            best_valid_acc = valid_acc
+            best_model_state_dict = model.state_dict().copy()
+
+        # Early stopping
+        if epoch > 10 and valid_acc <= best_valid_acc:
+            logging.info("Early stopping...")
+            break
+
+    # Load the best model state
+    model.load_state_dict(best_model_state_dict)
 
     logging.info("Optimization completed")
-    return {"loss": valid_loss}
+    return model
 
 def evaluate_model(model, Data_loaeder, device):
     model.eval()
@@ -285,7 +299,7 @@ def get_predictions(model, data_loader,device):
             _, predicted = torch.max(outputs.data, 1)
             predictions.append(predicted)
        
-            if (i + 1) % 10 == 0:
+            if (i + 1) % 1000 == 0:
                 logging.info(f'Processed {i + 1} batches out of {len(data_loader)}')
 
     return predictions

@@ -6,8 +6,8 @@ from torch.utils.data import DataLoader,Dataset
 from sklearn.model_selection import train_test_split
 import logging
 from PIL import Image
-
-
+import numpy as np
+from torch.utils.data import Subset, random_split
 
 logging.getLogger("optuna").setLevel(logging.WARNING)
 
@@ -135,11 +135,22 @@ def setup_transforms():
 
     return train_test_transform, valid_transform
 
-def prepare_validation_dataloader(df_validation, val_path, valid_transform, image_filter, model):
+def prepare_validation_dataloader(df_validation, val_path, valid_transform, image_filter, model, num_images=500):
     logging.info("Preparing Validation DataLoader")
 
+    # First, prepare the full validation dataset
     valid_data = data_adjust(df_validation, val_path, image_transform=valid_transform, image_filter=image_filter, model=model)
-    valid_dataloader = DataLoader(valid_data, batch_size=1, shuffle=False)
+
+    # Then, create a subset of the validation dataset with only 100 images
+    num_total_images = len(valid_data)
+    indices = list(range(num_total_images))
+    np.random.shuffle(indices)
+    subset_indices = indices[:num_images]
+
+    subset_valid_data = Subset(valid_data, subset_indices)
+
+    # Create DataLoader for the subset validation data
+    valid_dataloader = DataLoader(subset_valid_data, batch_size=1, shuffle=False)
 
     return valid_dataloader
 

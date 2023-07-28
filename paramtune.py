@@ -49,7 +49,7 @@ def param_tuning(data_label, path, path_for_val, device):
                 data_label,
                 path,
                 path_for_val,
-                train_test_sample_size=25,
+                train_test_sample_size=100,
                 batch_size=config["batch_size"],
                 image_filter=preprocess_image,
                 model=model_name,
@@ -59,7 +59,7 @@ def param_tuning(data_label, path, path_for_val, device):
             train_loader = train_data
             valid_loader = test_data
 
-            for epoch in range(2):
+            for epoch in range(10):
                 _, _ = train(train_loader, model, loss_fn, optimizer, device=device)
                 valid_loss, _ = test(valid_loader, model, loss_fn, device=device)
                 trial.report(valid_loss, epoch)
