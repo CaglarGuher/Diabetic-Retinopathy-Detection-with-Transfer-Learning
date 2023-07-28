@@ -55,12 +55,12 @@ class data_adjust(Dataset):
 
     def apply_model_specific_resize(self, image):
         model_resize_map = {
-            "inception_v3": transforms.Resize([229, 229]),
-            "efficient-netb7": transforms.Resize([600, 600]),
-            "efficient-netb6": transforms.Resize([528, 528]),
-            "efficient-netb5": transforms.Resize([456, 456]),
-            "resnext101_32x8d": transforms.Resize([256, 256]),
-            "resnext101_64x4d": transforms.Resize([256, 256])
+            "EfficientNet_B7": transforms.Resize([600, 600]),
+            "EfficientNet_B6": transforms.Resize([528, 528]),
+            "EfficientNet_B5": transforms.Resize([456, 456]),
+            "ResNeXt101_32X8D": transforms.Resize([232, 232]),
+            "ResNeXt101_64X4D": transforms.Resize([232, 232]),
+            "ResNeXt50_32X4D":transforms.Resize([232, 232])
         }
 
         default_resize = transforms.Resize([224, 224])

@@ -39,10 +39,10 @@ if __name__ == "__main__":
     parser.add_argument("--data_label_path", type=str, default="C:\\Users\\PC\\Desktop\\diabetic retinopathy\\data\\labels\\label.csv")
     parser.add_argument("--train_test_path", type=str, default="C:\\Users\\PC\\Desktop\\diabetic retinopathy\\data\\test_train_images")
     parser.add_argument("--validation_path", type=str, default="C:\\Users\\PC\\Desktop\\diabetic retinopathy\\data\\validation_images")
-    parser.add_argument("--best_results_path", type=str, default="C:\\Users\\PC\Desktop\\diabetic retinopathy\\data\\best results")
-    parser.add_argument("--saved_models_path", type=str, default="C:\\Users\\PC\\Desktop\\diabetic retinopathy\\data\\saved models")
+    parser.add_argument("--best_results_path", type=str, default="C:\\Users\\PC\Desktop\\diabetic retinopathy\\best_results.json")
+    parser.add_argument("--saved_models_path", type=str, default="C:\\Users\\PC\\Desktop\\diabetic retinopathy\\saved models")
     parser.add_argument("--epochs", type=int, default=5)
-    parser.add_argument("--tt_samp_size",type = int,default =10,help="how many train data you want to put ")
+    parser.add_argument("--tt_samp_size",type = int,default =50,help="how many train data you want to put ")
     args = parser.parse_args()
     main(args)
 
