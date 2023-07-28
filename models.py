@@ -4,7 +4,7 @@ from torch import nn
 
 
 model_dict = {
-    "densenet161": {"model": models.densenet161, "weight": 1},
+    "DenseNet161": {"model": models.densenet161, "weight": 1},
     "resnet152": {"model": models.resnet152, "weight": 0.6},
     "resnet101": {"model": models.resnet101, "weight": 0.5},
     "vgg19": {"model": models.vgg19, "weight": 0.4},
@@ -47,7 +47,7 @@ def modify_model(model, num_classes=5):
 def select_model(model_name):
     if model_name in model_dict:
         model_func = model_dict[model_name]["model"]
-        weight_key = f"{model_name}_weights_default"
+        weight_key = f"{model_name}_Weights.DEFAULT"
         model = model_func(weights=weight_key)
 
         for parameter in model.parameters():

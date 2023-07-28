@@ -1,7 +1,6 @@
 import pandas as pd
 import torch
 import cv2
-import matplotlib.pyplot as plt
 from torchvision import transforms
 from torch.utils.data import DataLoader,Dataset
 from sklearn.model_selection import train_test_split

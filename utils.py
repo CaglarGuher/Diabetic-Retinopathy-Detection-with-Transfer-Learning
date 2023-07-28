@@ -1,20 +1,14 @@
-import pandas as pd
 import torch
 import cv2
 import numpy as np
+from data_prep import get_data
 import random
 import matplotlib.pyplot as plt
-from torchvision import transforms
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, confusion_matrix
-from torch.utils.data import DataLoader,Dataset
 import wandb
 from sklearn.metrics import roc_curve, auc
 import logging
-from ray.tune.schedulers import ASHAScheduler
-from ray.tune.suggest.optuna import OptunaSearch
-from ray.tune.progress_reporter import CLIReporter
-from ray import tune
-from PIL import Image
+
 def extract_bv(image):
     b,green_fundus,r = cv2.split(image)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))

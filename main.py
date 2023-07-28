@@ -12,14 +12,12 @@ import json
 
 
 
-
 def main(args):
     
     data_label = pd.read_csv(args.data_label_path)
     torch.cuda.empty_cache()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    param_tuning(data_label, args.train_test_path, args.validation_path, device)
+    param_tuning(data_label, args.train_test_path, args.validation_path, device) 
 
     with open(args.best_results_path, 'r') as file:
         best_results = json.load(file)
@@ -38,13 +36,13 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_label_path", type=str, default="C:/Users/PC/Desktop/retinopathy_data/data/labels/label.csv")
-    parser.add_argument("--train_test_path", type=str, default="C:/Users/PC/Desktop/retinopathy_data/data/test_train_images")
-    parser.add_argument("--validation_path", type=str, default="C:/Users/PC/Desktop/retinopathy_data/data/validation_images")
+    parser.add_argument("--data_label_path", type=str, default="data\labels\label.csv")
+    parser.add_argument("--train_test_path", type=str, default="data/test_train_images")
+    parser.add_argument("--validation_path", type=str, default="data/validation_images")
     parser.add_argument("--best_results_path", type=str, default="best_results.json")
-    parser.add_argument("--saved_models_path", type=str, default="C:/Users/PC/Desktop/saved_models")
-    parser.add_argument("--epochs", type=int, default=15)
-    parser.add_argument("--tt_samp_size",type = int,default = 100,help="how many train data you want to put ")
+    parser.add_argument("--saved_models_path", type=str, default="saved_models")
+    parser.add_argument("--epochs", type=int, default=20)
+    parser.add_argument("--tt_samp_size",type = int,default =10,help="how many train data you want to put ")
     args = parser.parse_args()
     main(args)
 
