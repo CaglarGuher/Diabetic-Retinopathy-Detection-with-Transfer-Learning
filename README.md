@@ -30,6 +30,5 @@ The training process involves several steps, including pre-processing of the ret
 
 Once the models are trained, a weighted ensemble method is employed to combine the predictions of all 16 models. This approach aims to leverage the strengths of each model and improve the overall performance of the system in detecting DR. The models are assigned weights based on their individual performance, and a weighted voting scheme is used to determine the final prediction for each retinal image.
 
-The ultimate goal of this project is to develop an accurate and efficient system for DR detection that can be integrated into clinical workflows and aid ophthalmologists in identifying DR in its early stages. By automating the detection process and reducing the reliance on manual examination, this system has the potential to significantly improve patient outcomes and reduce the burden on healthcare professionals.
+The ultimate goal of this project is to develop an accurate and efficient system for DR detection that can be integrated into clinical workflows and aid ophthalmologists in identifying DR in its early stages. By automating the detection process and reducing the reliance on manual examination, this system has the potential to significantly improve patient outcomes and reduce the burden on healthcare professionals
 
-Please note that this project is still under development, with the training phase of the models remaining to be completed. Stay tuned for updates and improvements to the system.
