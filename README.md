@@ -12,24 +12,17 @@ This project aims to develop a deep learning-based system for the detection of D
 
 by employing various Convolutional Neural Networks (CNN) architectures with over 90000 eye fundus images. Diabetic Retinopathy is a diabetes-related complication that affects the retina, which is the light-sensitive layer at the back of the eye. If left untreated, DR can lead to severe vision loss or even blindness. Early detection and intervention are crucial for mitigating the risk of vision loss in patients with diabetes.
 
-The project utilizes 16 different CNN models to classify images of the retina into different stages of DR, ranging from no DR to severe DR. The employed models are as follows:
+The project utilizes 9 different CNN models to classify images of the retina into different stages of DR, ranging from no DR to severe DR. The employed models are as follows:
 
-1. Densenet161
-2. Resnet152
-3. Resnet101
-4. VGG19
-5. AlexNet
-6. GoogleNet
-7. MobileNet V2
-8. ShuffleNet V2 x1.0
-9. ResNeXt50 32x4d
-10. ResNeXt101 32x8d
-11. ResNeXt101 64x4d
-12. Wide ResNet50_2
-13. Wide ResNet101_2
-14. EfficientNet-B7
-15. EfficientNet-B6
-16. EfficientNet-B5
+1. Resnet152
+2. ResNeXt50 32x4d
+3. ResNeXt101 32x8d
+4. ResNeXt101 64x4d
+5. Wide ResNet50_2
+6. Wide ResNet101_2
+7. EfficientNet-B7
+8. EfficientNet-B6
+9. EfficientNet-B5
 
 These models are fine-tuned using transfer learning and hyperparameter optimization to achieve the best possible performance on the task of DR detection.
 
